@@ -909,6 +909,7 @@ def set_context(static: "StaticContext", dynamic: "DynamicContext"):
 def jit(
     f: tp.Union[tp.Callable, Module],
     modules: tp.Optional[tp.Union[Module, tp.List[Module]]] = None,
+    unwrapped: tp.Optional[bool] = False,
     **kwargs,
 ):
     static_argnums = tuple(kwargs.pop("static_argnums", ()))
@@ -959,6 +960,8 @@ def jit(
         )
 
     jit_fn = jax.jit(_jit_fn, static_argnums, **kwargs)
+    if unwrapped:
+        return jit_fn
 
     @functools.wraps(f)
     def wrapper(*args):
