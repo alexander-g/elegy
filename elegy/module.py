@@ -941,6 +941,7 @@ def jit(
         assert isinstance(modules, list)
 
         # states_tuple is not set because its static, therefore no need to propagate down
+        #it is still required to trigger retracing on a change
 
         # set global state
         set_context(statics, dynamics)
@@ -953,36 +954,22 @@ def jit(
 
         parameters_tuple = tuple(module.get_parameters() for module in modules)
 
-        return (
-            outputs,
-            get_dynamic_context(),
-            parameters_tuple,
-        )
-
-    jit_fn = jax.jit(_jit_fn, static_argnums, **kwargs)
-    if unwrapped:
-        return jit_fn
-
-    @functools.wraps(f)
-    def wrapper(*args):
+        return (states_tuple, statics, get_dynamic_context(), parameters_tuple), outputs
+    
+    def _get_state_fn():
         assert isinstance(modules, list)
 
         states_tuple = utils.to_static(
             tuple(FrozenDict(module._get_module_states()) for module in modules)
         )
+        states_tuple = tuple([tuple(jax.tree_leaves(module._get_module_states())) for module in modules])
         statics = get_static_context()
         dynamics = get_dynamic_context()
         parameters_tuple = tuple(module.get_parameters() for module in modules)
-        # static_argnums
-
-        outputs, dynamics, parameters_tuple = jit_fn(
-            states_tuple,
-            statics,
-            dynamics,
-            parameters_tuple,
-            *args,
-        )
-
+        return (states_tuple, statics, dynamics, parameters_tuple)
+    
+    def _set_state_fn(state):
+        _, _, dynamics, parameters_tuple = state
         statics = get_static_context()
         # set global state
         set_context(statics, dynamics)
@@ -991,9 +978,20 @@ def jit(
         for module, parameters in zip(modules, parameters_tuple):
             module.set_parameters(parameters)
 
-        return outputs
 
+    jit_fn = jax.jit(_jit_fn, static_argnums, **kwargs)
+    if unwrapped:
+        return jit_fn, _get_state_fn, _set_state_fn
+
+    @functools.wraps(f)
+    def wrapper(*args):
+        state = _get_state_fn()
+        newstate, out = jit_fn(*state, *args)
+        _set_state_fn(newstate)
+        return out
+    
     return wrapper
+
 
 
 def get_trainable_parameters(modules: tp.List[Module]) -> tp.List[tp.Any]:
