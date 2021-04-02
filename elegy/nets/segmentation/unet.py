@@ -165,10 +165,9 @@ class UNet_R18(UNet):
 
         r18 = elegy.nets.resnet.ResNet18(weights=backbone_weights, dtype=dtype)
         _x = np.zeros([1, 64, 64, 3])
-        elegy.Model(r18, run_eagerly=True).predict(_x)
         r18encoder = r18.slice(
-            start_module=None,
-            end_module=[
+            start=None,
+            end=[
                 "/input",
                 "/relu",
                 "/res_net_block_1",
@@ -189,8 +188,9 @@ class UNet_R18(UNet):
         )
 
         # manually injecting encoder into submodules, usually this happens after __init__
-        # XXX: ugly ugly
-        self._submodules.append("encoder")
+        # XXX: ugly ugly #TODO
+        self._submodules["encoder"] = r18encoder
+        self._submodule_name[r18encoder] = "encoder"
         if weights is not None:
             load_pretrained_weights(self, weights, PRETRAINED_URLS)
 
@@ -211,10 +211,9 @@ class UNet_R50(UNet):
 
         r50 = elegy.nets.resnet.ResNet50(weights=backbone_weights, dtype=dtype)
         _x = np.zeros([1, 64, 64, 3])
-        elegy.Model(r50, run_eagerly=True).predict(_x)
         r50encoder = r50.slice(
-            start_module=None,
-            end_module=[
+            start=None,
+            end=[
                 "/input",
                 "/relu",
                 "/bottleneck_res_net_block_2",
@@ -236,8 +235,9 @@ class UNet_R50(UNet):
         )
 
         # manually injecting encoder into submodules, usually this happens after __init__
-        # XXX: ugly ugly
-        self._submodules.append("encoder")
+        # XXX: ugly ugly #TODO
+        self._submodules["encoder"] = r50encoder
+        self._submodule_name[r50encoder] = "encoder"
         if weights is not None:
             load_pretrained_weights(self, weights, PRETRAINED_URLS)
 

@@ -136,7 +136,7 @@ class ReduceConfusionMatrix(Metric):
         y_true: jnp.ndarray,
         y_pred: jnp.ndarray,
         sample_weight: tp.Optional[jnp.ndarray] = None,
-    ) -> jnp.ndarray:
+    ) -> tp.Any:
         """
         Accumulates confusion matrix metrics for computing the reduction metric.
 
@@ -148,14 +148,14 @@ class ReduceConfusionMatrix(Metric):
             sample_weight: Optional weighting of each example. Defaults to 1.
 
         Returns:
-            Array with the cummulative reduce metric.
+            Array with the cumulative reduce metric.
         """
 
         cm_metric = self.add_parameter(
             "cm_metric",
-            shape=[] if self._n_classes is None else [self._n_classes],
-            dtype=jnp.int32,
-            initializer=initializers.Constant(0),
+            lambda: jnp.array(
+                jnp.zeros(self._n_classes or 1).squeeze(), dtype=jnp.int32
+            ),
             trainable=False,
         )
 

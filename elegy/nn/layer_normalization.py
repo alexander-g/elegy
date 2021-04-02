@@ -15,7 +15,7 @@
 """Layer Norm."""
 
 import collections
-import types
+from elegy import types
 from typing import Optional, Sequence, Union
 
 import jax
@@ -39,8 +39,8 @@ class LayerNormalization(module.Module):
         create_scale: bool = True,
         create_offset: bool = True,
         eps: float = 1e-5,
-        scale_init: Optional[initializers.Initializer] = None,
-        offset_init: Optional[initializers.Initializer] = None,
+        scale_init: Optional[types.Initializer] = None,
+        offset_init: Optional[types.Initializer] = None,
         **kwargs
     ):
         """Constructs a LayerNorm module.
@@ -120,14 +120,22 @@ class LayerNormalization(module.Module):
         param_shape = inputs.shape[-1:]
         if self.create_scale:
             scale = self.add_parameter(
-                "scale", param_shape, jnp.float32, initializer=self.scale_init
+                "scale",
+                lambda: self.scale_init(
+                    param_shape,
+                    jnp.float32,
+                ),
             )
         elif scale is None:
             scale = np.array(1.0, dtype=inputs.dtype)
 
         if self.create_offset:
             offset = self.add_parameter(
-                "offset", param_shape, jnp.float32, initializer=self.offset_init
+                "offset",
+                lambda: self.offset_init(
+                    param_shape,
+                    jnp.float32,
+                ),
             )
         elif offset is None:
             offset = np.array(0.0, dtype=inputs.dtype)
@@ -151,8 +159,8 @@ class InstanceNormalization(LayerNormalization):
         create_scale: bool = True,
         create_offset: bool = True,
         eps: float = 1e-5,
-        scale_init: Optional[initializers.Initializer] = None,
-        offset_init: Optional[initializers.Initializer] = None,
+        scale_init: Optional[types.Initializer] = None,
+        offset_init: Optional[types.Initializer] = None,
         data_format: str = "channels_last",
         **kwargs
     ):

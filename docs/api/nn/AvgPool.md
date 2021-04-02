@@ -12,6 +12,4 @@
             - set_parameters
             - reset
             - init
-            - initialized
-            - slice
         

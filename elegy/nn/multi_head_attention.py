@@ -9,6 +9,7 @@ from elegy.nn.dropout import Dropout
 from elegy.nn.layer_normalization import LayerNormalization
 from elegy.nn.linear import Linear
 from elegy.nn.sequential_module import sequential
+from elegy import types
 
 
 class MultiHeadAttention(module.Module):
@@ -67,10 +68,8 @@ class MultiHeadAttention(module.Module):
         dropout: float = 0.0,
         use_projection_bias: bool = True,
         return_attn_coef: bool = False,
-        kernel_initializer: initializers.Initializer = initializers.VarianceScaling(
-            scale=2.0
-        ),
-        bias_initializer: initializers.Initializer = initializers.Constant(0.0),
+        kernel_initializer: types.Initializer = initializers.VarianceScaling(scale=2.0),
+        bias_initializer: types.Initializer = initializers.Constant(0.0),
         # kernel_initializer: typing.Union[str, typing.Callable] = "glorot_uniform",
         # kernel_regularizer: typing.Union[str, typing.Callable] = None,
         # kernel_constraint: typing.Union[str, typing.Callable] = None,
@@ -155,27 +154,27 @@ class MultiHeadAttention(module.Module):
         # get weights
         query_kernel = self.add_parameter(
             "query_kernel",
-            [self.num_heads, query.shape[-1], self.head_size],
-            jnp.float32,
-            initializer=self.kernel_initializer,
+            lambda: self.kernel_initializer(
+                [self.num_heads, query.shape[-1], self.head_size], jnp.float32
+            ),
         )
         key_kernel = self.add_parameter(
             "key_kernel",
-            [self.num_heads, key.shape[-1], self.head_size],
-            jnp.float32,
-            initializer=self.kernel_initializer,
+            lambda: self.kernel_initializer(
+                [self.num_heads, key.shape[-1], self.head_size], jnp.float32
+            ),
         )
         value_kernel = self.add_parameter(
             "value_kernel",
-            [self.num_heads, value.shape[-1], self.head_size],
-            jnp.float32,
-            initializer=self.kernel_initializer,
+            lambda: self.kernel_initializer(
+                [self.num_heads, value.shape[-1], self.head_size], jnp.float32
+            ),
         )
         projection_kernel = self.add_parameter(
             "projection_kernel",
-            [self.num_heads, self.head_size, output_size],
-            jnp.float32,
-            initializer=self.kernel_initializer,
+            lambda: self.kernel_initializer(
+                [self.num_heads, self.head_size, output_size], jnp.float32
+            ),
         )
 
         # Linear transformations
@@ -215,9 +214,7 @@ class MultiHeadAttention(module.Module):
         if self.use_projection_bias:
             output += self.add_parameter(
                 "projection_bias",
-                [output_size],
-                jnp.float32,
-                initializer=self.bias_initializer,
+                lambda: self.bias_initializer([output_size], jnp.float32),
             )
 
         if self.return_attn_coef:

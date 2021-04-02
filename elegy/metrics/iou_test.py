@@ -17,7 +17,7 @@ class MeanIoUTest(unittest.TestCase):
         ypred_sparse = jnp.array([0, 1, 1, 1, 0])
         ypred = jax.nn.one_hot(ypred_sparse, num_classes=3)
 
-        iou0 = miou(ytrue, ypred)
+        iou0 = miou.call_with_defaults()(ytrue, ypred)
         iou1 = kmiou(ytrue, ypred_sparse)
 
         assert np.allclose(iou0, iou1)
@@ -31,7 +31,7 @@ class MeanIoUTest(unittest.TestCase):
         ytrue = np.random.randint(0, N_CLASSES, size=(4, 100, 100))
         ypred = np.random.random([4, 100, 100, 10])
 
-        iou0 = miou(ytrue, ypred)
+        iou0 = miou.call_with_defaults()(ytrue, ypred)
         kmiou.update_state(ytrue, ypred.argmax(-1))
         iou1 = kmiou.result().numpy()
         assert np.allclose(iou0, iou1)
@@ -41,7 +41,7 @@ class MeanIoUTest(unittest.TestCase):
         ypred = np.random.random([4, 100, 100, 10])
         weight = np.random.random(ytrue.shape)
 
-        iou0 = miou(ytrue, ypred, sample_weight=weight)
+        iou0 = miou.call_with_defaults()(ytrue, ypred, sample_weight=weight)
         kmiou.update_state(ytrue, ypred.argmax(-1), sample_weight=weight)
         iou1 = kmiou.result().numpy()
         assert np.allclose(iou0, iou1)
@@ -54,12 +54,12 @@ class MeanIoUTest(unittest.TestCase):
         ypred_sparse = jnp.array([0, 1, 1, 1, 0, 4, 4, 0])
         ypred = jax.nn.one_hot(ypred_sparse, num_classes=5)
 
-        iou0 = miou(ytrue, ypred)
+        iou0 = miou.call_with_defaults()(ytrue, ypred)
         assert jnp.allclose(iou0, (1 / 4 + 2 / 3) / 2)
 
         # test ignore_index
         miou = elegy.metrics.MeanIoU(classes=[0, 4], ignore_index=2)
-        iou1 = miou(ytrue, ypred)
+        iou1 = miou.call_with_defaults()(ytrue, ypred)
         assert jnp.allclose(iou1, (1 / 3 + 2 / 3) / 2)
 
 
@@ -73,19 +73,19 @@ class MultiClassReductionsTest(unittest.TestCase):
         ytrue = jnp.array([0, 0, 0, 1, 1, 1, 2, 3])
         ypred = jnp.array([1, 0, 0, 0, 0, 1, 2, 2])
 
-        tp0 = mc_tp(ytrue, ypred)
+        tp0 = mc_tp.call_with_defaults()(ytrue, ypred)
         assert all(tp0 == jnp.array([2, 1, 1, 0, 0]))
 
         # accumulate
         ypred = ytrue.copy()
-        tp1 = mc_tp(ytrue, ypred)
+        tp1 = mc_tp.call_with_defaults()(ytrue, ypred)
         assert all(tp1 == jnp.array([5, 4, 2, 1, 0]))
 
         # randomized
         ytrue = np.random.randint(0, 10, size=(100, 100))
         ypred = np.random.randint(0, 10, size=(100, 100))
         mc_tp = ReduceConfusionMatrix(Reduction.MULTICLASS_TRUE_POSITIVES, n_classes=10)
-        tp2 = mc_tp(ytrue, ypred)
+        tp2 = mc_tp.call_with_defaults()(ytrue, ypred)
         assert tp2.sum() == (ytrue == ypred).sum()
 
     def test_mc_fp(self):
@@ -94,11 +94,11 @@ class MultiClassReductionsTest(unittest.TestCase):
         ytrue = jnp.array([0, 0, 0, 1, 1, 1, 2, 3])
         ypred = jnp.array([1, 0, 0, 0, 0, 1, 2, 2])
 
-        fp0 = mc_fp(ytrue, ypred)
+        fp0 = mc_fp.call_with_defaults()(ytrue, ypred)
         assert all(fp0 == jnp.array([2, 1, 1, 0, 0]))
 
         ypred = ytrue.copy()
-        fp1 = mc_fp(ytrue, ypred)
+        fp1 = mc_fp.call_with_defaults()(ytrue, ypred)
         assert all(fp0 == jnp.array([2, 1, 1, 0, 0]))  # no new false positives
 
     def test_mc_fn(self):
@@ -107,9 +107,9 @@ class MultiClassReductionsTest(unittest.TestCase):
         ytrue = jnp.array([0, 0, 0, 1, 1, 1, 2, 3])
         ypred = jnp.array([1, 0, 0, 0, 0, 1, 2, 2])
 
-        fp0 = mc_fn(ytrue, ypred)
+        fp0 = mc_fn.call_with_defaults()(ytrue, ypred)
         assert all(fp0 == jnp.array([1, 2, 0, 1, 0]))
 
         ypred = ytrue.copy()
-        fp1 = mc_fn(ytrue, ypred)
+        fp1 = mc_fn.call_with_defaults()(ytrue, ypred)
         assert all(fp0 == jnp.array([1, 2, 0, 1, 0]))  # no new false negatives
