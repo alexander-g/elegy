@@ -161,10 +161,10 @@ class Module(metaclass=ModuleMeta):
         "__init__",
         "call",
         "add_parameter",
-        "get_parameters",
-        "set_parameters",
-        "reset",
+        "get_default_parameters",
+        "set_default_parameters",
         "init",
+        "slice",
     ]
 
     def __init__(self, name: tp.Optional[str] = None, dtype: tp.Any = jnp.float32):
@@ -401,7 +401,7 @@ class Module(metaclass=ModuleMeta):
         ..., tp.Tuple[tp.Any, tp.Optional[types.Parameters], types.ParameterCollection]
     ]:
         """
-        Initializes the module,
+        Call the module.
         """
 
         def init_callable(
