@@ -81,9 +81,13 @@ class UpBlock(Module):
         self.batchnorm = batchnorm
 
     def call(self, x: jnp.ndarray, skipx: jnp.ndarray):
-        x = jax.image.resize(x, skipx.shape, method="bilinear")
-        x = elegy.nn.Conv2D(self.channels, (1, 1), dtype=self.dtype)(x)
+        #resize x to skipx spatial dimensions, keeping the channels
+        x = jax.image.resize(x, skipx.shape[:-1] + x.shape[-1:], method="bilinear")
+        #concatenate the skip connection
         x = jnp.concatenate([x, skipx], axis=-1)
+        #reduce the number channels via 1x1 convolution
+        x = elegy.nn.Conv2D(self.channels, (1, 1), dtype=self.dtype)(x)
+        #main convolutional block
         x = ConvBlock(self.channels, batchnorm=self.batchnorm, dtype=self.dtype)(x)
         return x
 
